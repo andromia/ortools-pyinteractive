@@ -106,11 +106,11 @@ def create_matrix(origin: ORIGIN_TYPE, dests: DEMAND_TYPE):
 
     matrix: List[List[int]] = []
     for i in range(len(LATS)):
-        distances = create_vectorized_haversine_li(
+        distances: List[float] = create_vectorized_haversine_li(
             olat=LATS[i], olon=LONS[i], dlats=LATS, dlons=LONS
         )
 
-        distances = np.ceil(distances * 100).astype(int)
+        distances: List[int] = np.ceil(distances * 100).astype(int)
         matrix.append(distances)
 
     return matrix
