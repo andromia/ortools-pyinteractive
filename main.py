@@ -57,8 +57,8 @@ ORIGINS: List[ORIGIN_TYPE] = [
     ORIGIN(ORIGIN_LATS[i], ORIGIN_LONS[i]) for i in range(len(ORIGIN_LATS))
 ]
 
-# flow data (includes origin)
-ALL_DEMANDS: List[int] = [0] + ([5] * len(DEST_LATS))
+# flow data (includes origin as 0th index)
+ALL_DEMANDS: List[int] = [0, 5, 3, 7, 10, 15, 7, 8]
 
 assert len(ALL_DEMANDS) == len(ORIGINS) + len(DEST_LATS)
 assert len(ALL_DEMANDS) == len(ORIGINS) + len(DEST_LONS)
@@ -246,8 +246,17 @@ def get_solution(_manager, _model, _assignment):
 
                 # TODO: time_var = time_dimension.CumulVar(order)
                 _node = _manager.IndexToNode(_idx)
+                
+                if _node == DEPOT_INDEX:
+                    lat = ORIGINS[0].lat
+                    lon = ORIGINS[0].lon
+                else:
+                    lat = DEMANDS[_node-1].lat
+                    lon = DEMANDS[_node-1].lon
+
                 _assignment_output += (
                     f" Stop(idx={_node},"
+                    f"loc={round(lat, 2)},{round(lon, 2)},"
                     f"demand={ALL_DEMANDS[_node]},"
                     f"dist={DIST_MATRIX[_prev_node][_node]/INT_PRECISION}) -> "
                 )
