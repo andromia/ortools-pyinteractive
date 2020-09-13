@@ -18,6 +18,10 @@ from ortools.constraint_solver import pywrapcp, routing_enums_pb2
 from haversine import haversine_vector, Unit
 import numpy as np
 
+
+# integer processing
+INT_PRECISION = 100
+
 # origin data
 ORIGIN_LATS = [37.69]
 ORIGIN_LONS = [-79.31]
@@ -61,10 +65,10 @@ assert len(ALL_DEMANDS) == len(ORIGINS) + len(DEST_LONS)
 
 # vehicle data
 MAX_VEHICLE_CAP: int = 26
-MAX_VEHICLE_DIST: int = 100000
+MAX_VEHICLE_DIST: int = 100000  # distance is x*100 for integers
 NUM_VEHICLES = len(ALL_DEMANDS)
 SOFT_MAX_VEHICLE_DIST: int = int(MAX_VEHICLE_DIST * 0.75)
-SOFT_MAX_VEHICLE_COST: int = 150000
+SOFT_MAX_VEHICLE_COST: int = 100000
 
 assert all(x < MAX_VEHICLE_CAP for x in ALL_DEMANDS)
 
@@ -127,7 +131,7 @@ def create_matrix(_origin: ORIGIN_TYPE, _dests: DEMAND_TYPE):
             _olat=_LATS[_i], _olon=_LONS[_i], _dlats=_LATS, _dlons=_LONS
         )
 
-        _idistances: List[int] = np.ceil(_fdistances * 100).astype(int)
+        _idistances: List[int] = np.ceil(_fdistances * INT_PRECISION).astype(int)
         _matrix.append(_idistances)
 
     return _matrix
@@ -221,35 +225,41 @@ def get_solution(_manager, _model, _assignment):
     NOTE: from https://github.com/google/or-tools/blob/stable/examples/python/cvrptw_plot.py
     """
     _dropped = []
-    for _order in range(_model.Size()):
-        if _assignment.Value(_model.NextVar(_order)) == _order:
-            _dropped.append(str(_order))
+    for _idx in range(_model.Size()):
+        if _assignment.Value(_model.NextVar(_idx)) == _idx:
+            _dropped.append(str(_idx))
 
-    _capacity_dimension = _model.GetDimensionOrDie("Capacity")
+    # _capacity_dimension = _model.GetDimensionOrDie("Capacity")
+    # _dist_dimension = _model.GetDimensionOrDie("Distance")
     # TODO: time_dimension = routing.GetDimensionOrDie("Time")
     _assignment_output = ""
 
     for _route_number in range(_model.vehicles()):
-        _order = _model.Start(_route_number)
+        _idx = _model.Start(_route_number)
         _assignment_output += f"Route {_route_number}:"
-        if _model.IsEnd(_assignment.Value(_model.NextVar(_order))):
+        if _model.IsEnd(_assignment.Value(_model.NextVar(_idx))):
             _assignment_output += " Empty \n"
         else:
             while True:
-                _load_var = _capacity_dimension.CumulVar(_order)
+
+                if _model.IsEnd(_idx):
+                    _assignment_output += f" EndRoute {_route_number}. \n"
+                    break
+
                 # TODO: time_var = time_dimension.CumulVar(order)
-                _node = _manager.IndexToNode(_order)
+                _node = _manager.IndexToNode(_idx)
+                _next_idx = _assignment.Value(_model.NextVar(_idx))
+                _next_node = _manager.IndexToNode(_next_idx)
                 # TODO: append "Time({tmin}, {tmax}) -> "
                 _assignment_output += (
-                    f" {_node} Load({_assignment.Value(_load_var)}) -> "
+                    f" Stop(idx={_node},"
+                    f"demand={ALL_DEMANDS[_node]},"
+                    f"dist={DIST_MATRIX[_node][_next_node]/INT_PRECISION}) -> "
                 )
                 # TODO: tmin=str(timedelta(seconds=_assignment.Min(time_var))),
                 # TODO: tmax=str(timedelta(seconds=_assignment.Max(time_var))),
 
-                if _model.IsEnd(_order):
-                    _assignment_output += f" EndRoute {_route_number}. \n"
-                    break
-                _order = _assignment.Value(_model.NextVar(_order))
+                _idx = _assignment.Value(_model.NextVar(_idx))
         _assignment_output += "\n"
 
     return (_assignment_output, _dropped)
@@ -262,5 +272,3 @@ if assignment:
     )
 
     print(f"solution:\n{solution}" + f"dropped:\n{dropped}")
-
-# %%
