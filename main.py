@@ -214,19 +214,13 @@ assignment = model.SolveWithParameters(search_parameters)
 
 def get_solution(_manager, _model, _assignment):
     """
-    Returns solution data containing each route and their Stops, any dropped
-    demand, and a formatted string of the solution.
+    Returns solution data containing each route and their Stops.
 
     :_model:       (ortools.constraint_solver.pywrapcp.RoutingModel): _model.
-    :_assignmentL: (ortools.constraint_solver.pywrapcp.Assignment): the assignment.
+    :_assignment: (ortools.constraint_solver.pywrapcp.Assignment): the assignment.
 
-    Returns: (_solution: list[list[Stop]], dropped[int], _str)
+    Returns: _solution: list[list[Stop]]
     """
-    _dropped = []
-    for _idx in range(_model.Size()):
-        if _assignment.Value(_model.NextVar(_idx)) == _idx:
-            _dropped.append(str(_idx))
-
     _STOP = namedtuple("Stop", ["idx", "lat", "lon", "demand", "dist"])
 
     _solution = []
@@ -265,19 +259,32 @@ def get_solution(_manager, _model, _assignment):
 
         _solution.append(_route)
 
-        _str = ""
-        for _i, _r in enumerate(_solution):
-            _str += f"Route(idx={_i})\n"
-            _s = "\n".join("{}: {}".format(*k) for k in enumerate(_r))
-            _str += _s + "\n\n"
+    return _solution
 
-    return (_solution, _dropped, _str)
+
+def get_dropped_nodes(_model, _assignment):
+    _dropped = []
+    for _idx in range(_model.Size()):
+        if _assignment.Value(_model.NextVar(_idx)) == _idx:
+            _dropped.append(str(_idx))
+
+    return _dropped
+
+
+def get_solution_str(_solution):
+    _str = ""
+    for _i, _r in enumerate(_solution):
+        _str += f"Route(idx={_i})\n"
+        _s = "\n".join("{}: {}".format(*k) for k in enumerate(_r))
+        _str += _s + "\n\n"
+
+    return _str
 
 
 if assignment:
 
-    solution, dropped, _str = get_solution(
-        _manager=manager, _model=model, _assignment=assignment
-    )
+    solution = get_solution(_manager=manager, _model=model, _assignment=assignment)
+    dropped = get_dropped_nodes(model, assignment)
+    _str = get_solution_str(solution)
 
     print(f"solution:\n{_str}" + f"dropped:\n{dropped}")
