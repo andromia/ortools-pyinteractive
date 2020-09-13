@@ -229,55 +229,57 @@ def get_solution(_manager, _model, _assignment):
         if _assignment.Value(_model.NextVar(_idx)) == _idx:
             _dropped.append(str(_idx))
 
-    # _capacity_dimension = _model.GetDimensionOrDie("Capacity")
-    # _dist_dimension = _model.GetDimensionOrDie("Distance")
-    # TODO: time_dimension = routing.GetDimensionOrDie("Time")
-    _assignment_output = ""
+    _STOP = namedtuple("Stop", ["idx", "lat", "lon", "demand", "dist"])
 
+    _solution = []
     for _route_number in range(_model.vehicles()):
+        _route = []
         _idx = _model.Start(_route_number)
-        _assignment_output += f"Route {_route_number}:"
-        if _model.IsEnd(_assignment.Value(_model.NextVar(_idx))):
-            _assignment_output += " Empty \n"
-        else:
 
+        if _model.IsEnd(_assignment.Value(_model.NextVar(_idx))):
+            continue
+
+        else:
             _prev_node = _manager.IndexToNode(_idx)
+
             while True:
 
                 # TODO: time_var = time_dimension.CumulVar(order)
                 _node = _manager.IndexToNode(_idx)
-                
-                if _node == DEPOT_INDEX:
-                    lat = ORIGINS[0].lat
-                    lon = ORIGINS[0].lon
-                else:
-                    lat = DEMANDS[_node-1].lat
-                    lon = DEMANDS[_node-1].lon
 
-                _assignment_output += (
-                    f" Stop(idx={_node},"
-                    f"loc={round(lat, 2)},{round(lon, 2)},"
-                    f"demand={ALL_DEMANDS[_node]},"
-                    f"dist={DIST_MATRIX[_prev_node][_node]/INT_PRECISION}) -> "
-                )
-                # TODO: tmin=str(timedelta(seconds=_assignment.Min(time_var))),
-                # TODO: tmax=str(timedelta(seconds=_assignment.Max(time_var))),
+                if _node == DEPOT_INDEX:
+                    _lat = ORIGINS[0].lat
+                    _lon = ORIGINS[0].lon
+                else:
+                    _lat = DEMANDS[_node - 1].lat
+                    _lon = DEMANDS[_node - 1].lon
+
+                _demand = ALL_DEMANDS[_node]
+                _dist = DIST_MATRIX[_prev_node][_node] / INT_PRECISION
+
+                _route.append(_STOP(_node, _lat, _lon, _demand, _dist))
 
                 if _model.IsEnd(_idx):
-                    _assignment_output += f" EndRoute {_route_number}. \n"
                     break
 
                 _prev_node = _node
                 _idx = _assignment.Value(_model.NextVar(_idx))
-        _assignment_output += "\n"
 
-    return (_assignment_output, _dropped)
+        _solution.append(_route)
+
+        _str = ""
+        for _i, _r in enumerate(_solution):
+            _str += f"Route(idx={_i})\n"
+            _s = "\n".join("{}: {}".format(*k) for k in enumerate(_r))
+            _str += _s + "\n\n"
+
+    return (_solution, _dropped, _str)
 
 
 if assignment:
 
-    solution, dropped = get_solution(
+    solution, dropped, _str = get_solution(
         _manager=manager, _model=model, _assignment=assignment
     )
 
-    print(f"solution:\n{solution}" + f"dropped:\n{dropped}")
+    print(f"solution:\n{_str}" + f"dropped:\n{dropped}")
