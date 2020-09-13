@@ -241,22 +241,15 @@ def get_solution(_manager, _model, _assignment):
             _assignment_output += " Empty \n"
         else:
 
-            _prev_node = None
+            _prev_node = _manager.IndexToNode(_idx)
             while True:
 
                 # TODO: time_var = time_dimension.CumulVar(order)
                 _node = _manager.IndexToNode(_idx)
-
-                if not _model.IsEnd(_idx):
-                    _next_idx = _assignment.Value(_model.NextVar(_idx))
-                    _next_node = _manager.IndexToNode(_next_idx)
-                else:
-                    _next_node = _prev_node
-
                 _assignment_output += (
                     f" Stop(idx={_node},"
                     f"demand={ALL_DEMANDS[_node]},"
-                    f"dist={DIST_MATRIX[_node][_next_node]/INT_PRECISION}) -> "
+                    f"dist={DIST_MATRIX[_prev_node][_node]/INT_PRECISION}) -> "
                 )
                 # TODO: tmin=str(timedelta(seconds=_assignment.Min(time_var))),
                 # TODO: tmax=str(timedelta(seconds=_assignment.Max(time_var))),
