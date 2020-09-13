@@ -240,17 +240,19 @@ def get_solution(_manager, _model, _assignment):
         if _model.IsEnd(_assignment.Value(_model.NextVar(_idx))):
             _assignment_output += " Empty \n"
         else:
-            while True:
 
-                if _model.IsEnd(_idx):
-                    _assignment_output += f" EndRoute {_route_number}. \n"
-                    break
+            _prev_node = None
+            while True:
 
                 # TODO: time_var = time_dimension.CumulVar(order)
                 _node = _manager.IndexToNode(_idx)
-                _next_idx = _assignment.Value(_model.NextVar(_idx))
-                _next_node = _manager.IndexToNode(_next_idx)
-                # TODO: append "Time({tmin}, {tmax}) -> "
+
+                if not _model.IsEnd(_idx):
+                    _next_idx = _assignment.Value(_model.NextVar(_idx))
+                    _next_node = _manager.IndexToNode(_next_idx)
+                else:
+                    _next_node = _prev_node
+
                 _assignment_output += (
                     f" Stop(idx={_node},"
                     f"demand={ALL_DEMANDS[_node]},"
@@ -259,6 +261,11 @@ def get_solution(_manager, _model, _assignment):
                 # TODO: tmin=str(timedelta(seconds=_assignment.Min(time_var))),
                 # TODO: tmax=str(timedelta(seconds=_assignment.Max(time_var))),
 
+                if _model.IsEnd(_idx):
+                    _assignment_output += f" EndRoute {_route_number}. \n"
+                    break
+
+                _prev_node = _node
                 _idx = _assignment.Value(_model.NextVar(_idx))
         _assignment_output += "\n"
 
