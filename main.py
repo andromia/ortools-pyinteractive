@@ -214,15 +214,13 @@ assignment = model.SolveWithParameters(search_parameters)
 
 def get_solution(_manager, _model, _assignment):
     """
-    Return a string displaying the output of the _model instance and
-    assignment (_assignment).
-    Args: _model (ortools.constraint_solver.pywrapcp.RoutingModel): _model.
-    _assignment (ortools.constraint_solver.pywrapcp.Assignment): the assignment.
-    Returns:
-        (string) _assignment_output: describing each vehicle's _assignment.
-        (List) dropped: list of dropped orders.
+    Returns solution data containing each route and their Stops, any dropped
+    demand, and a formatted string of the solution.
 
-    NOTE: from https://github.com/google/or-tools/blob/stable/examples/python/cvrptw_plot.py
+    :_model:       (ortools.constraint_solver.pywrapcp.RoutingModel): _model.
+    :_assignmentL: (ortools.constraint_solver.pywrapcp.Assignment): the assignment.
+
+    Returns: (_solution: list[list[Stop]], dropped[int], _str)
     """
     _dropped = []
     for _idx in range(_model.Size()):
