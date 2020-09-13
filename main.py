@@ -61,7 +61,7 @@ assert len(ALL_DEMANDS) == len(ORIGINS) + len(DEST_LONS)
 
 # vehicle data
 MAX_VEHICLE_CAP: int = 26
-MAX_VEHICLE_DIST: int = 200000
+MAX_VEHICLE_DIST: int = 100000
 NUM_VEHICLES = len(ALL_DEMANDS)
 SOFT_MAX_VEHICLE_DIST: int = int(MAX_VEHICLE_DIST * 0.75)
 SOFT_MAX_VEHICLE_COST: int = 150000
@@ -261,5 +261,6 @@ if assignment:
         _manager=manager, _model=model, _assignment=assignment
     )
 
-    print(f"solution: {solution}")
-    print(f"dropped: {dropped}")
+    print(f"solution:\n{solution}" + f"dropped:\n{dropped}")
+
+# %%
