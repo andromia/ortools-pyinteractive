@@ -16,7 +16,9 @@ from typing import List, Tuple  # TODO: typing for numpy arrays?
 from collections import namedtuple
 from ortools.constraint_solver import pywrapcp, routing_enums_pb2
 from haversine import haversine_vector, Unit
+import pandas as pd
 import numpy as np
+import plotly.graph_objects as go
 
 
 # integer processing
@@ -97,7 +99,7 @@ def create_vectorized_haversine_li(
     _olon: float,
     _dlats: List[float],
     _dlons: List[float],
-):
+) -> List[float]:
     assert len(_dlats) == len(_dlons)
 
     _olats: List[float] = [_olat] * len(_dlats)
@@ -110,7 +112,7 @@ def create_vectorized_haversine_li(
     return _ds
 
 
-def create_matrix(_origin: ORIGIN_TYPE, _dests: DEMAND_TYPE):
+def create_matrix(_origin: ORIGIN_TYPE, _dests: DEMAND_TYPE) -> List[List[int]]:
     """
     creates matrix using optimized matrix processing. distances
     are converted to integers (x*100).
@@ -150,7 +152,7 @@ DEPOT_INDEX = 0
 manager = pywrapcp.RoutingIndexManager(NUM_NODES, NUM_VEHICLES, DEPOT_INDEX)
 
 
-def matrix_callback(_i: int, _j: int):
+def matrix_callback(_i: int, _j: int) -> int:
     """index of from (i) and to (j)"""
     _node_i = manager.IndexToNode(_i)
     _node_j = manager.IndexToNode(_j)
@@ -159,7 +161,7 @@ def matrix_callback(_i: int, _j: int):
     return _d
 
 
-def demand_callback(_i: int):
+def demand_callback(_i: int) -> int:
     """capacity constraint"""
     _d = ALL_DEMANDS[manager.IndexToNode(_i)]
 
@@ -211,8 +213,10 @@ search_parameters.time_limit.seconds = MAX_SEARCH_SECONDS
 
 assignment = model.SolveWithParameters(search_parameters)
 
+STOP_TYPE = Tuple[int, float, float, int, float]
 
-def get_solution(_manager, _model, _assignment):
+
+def get_solution(_manager, _model, _assignment) -> List[List[STOP_TYPE]]:
     """
     Returns solution data containing each route and their Stops.
 
@@ -262,7 +266,7 @@ def get_solution(_manager, _model, _assignment):
     return _solution
 
 
-def get_dropped_nodes(_model, _assignment):
+def get_dropped_nodes(_model, _assignment) -> List[str]:
     _dropped = []
     for _idx in range(_model.Size()):
         if _assignment.Value(_model.NextVar(_idx)) == _idx:
@@ -271,7 +275,7 @@ def get_dropped_nodes(_model, _assignment):
     return _dropped
 
 
-def get_solution_str(_solution):
+def get_solution_str(_solution) -> str:
     _str = ""
     for _i, _r in enumerate(_solution):
         _str += f"Route(idx={_i})\n"
@@ -281,6 +285,71 @@ def get_solution_str(_solution):
     return _str
 
 
+def visualize_solution(_solution) -> None:
+    # base
+    _lats = []
+    _lons = []
+    _text = []
+
+    # lines
+    _lat_paths = []
+    _lon_paths = []
+    for _i, _r in enumerate(_solution):
+        for _j, _s in enumerate(_r):
+            _lats.append(_s.lat)
+            _lons.append(_s.lon)
+            _text.append(f"demand: {_r[_j].demand}")
+
+            if _j < len(_r) - 1:
+                _lat_paths.append([_s.lat, _r[_j + 1].lat])
+                _lon_paths.append([_s.lon, _r[_j + 1].lon])
+
+    _fig = go.Figure()
+
+    _fig.add_trace(
+        go.Scattergeo(
+            locationmode="USA-states",
+            lat=_lats,
+            lon=_lons,
+            hoverinfo="text",
+            text=_text,
+            mode="markers",
+            marker=dict(
+                size=5,
+                color="rgb(255, 0, 0)",
+                line=dict(width=3, color="rgba(68, 68, 68, 0)"),
+            ),
+        )
+    )
+
+    for i in range(len(_lat_paths)):
+        _fig.add_trace(
+            go.Scattergeo(
+                locationmode="USA-states",
+                lat=[_lat_paths[i][0], _lat_paths[i][1]],
+                lon=[_lon_paths[i][0], _lon_paths[i][1]],
+                mode="lines",
+                line=dict(width=1, color="red"),
+                # opacity = float(df_flight_paths['cnt'][i]) / float(df_flight_paths['cnt'].max()),
+            )
+        )
+
+    _fig.update_layout(
+        title_text="",
+        showlegend=False,
+        template="plotly_dark",
+        geo=dict(
+            scope="north america",
+            projection_type="azimuthal equal area",
+            showland=True,
+            landcolor="rgb(243, 243, 243)",
+            countrycolor="rgb(204, 204, 204)",
+        ),
+    )
+
+    _fig.show()
+
+
 if assignment:
 
     solution = get_solution(_manager=manager, _model=model, _assignment=assignment)
@@ -288,3 +357,5 @@ if assignment:
     _str = get_solution_str(solution)
 
     print(f"solution:\n{_str}" + f"dropped:\n{dropped}")
+
+    visualize_solution(solution)
