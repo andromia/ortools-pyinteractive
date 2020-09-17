@@ -20,6 +20,8 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
+from src import cluster
+
 
 # integer processing
 INT_PRECISION = 100
