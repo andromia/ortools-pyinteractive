@@ -44,11 +44,11 @@ def solve(
     :demand_quantities:             [int, int, ... len(demand nodes) - 1]
     :vehicles:                      list of namedtuples containing "cap" (int) for vehicle
                                     capacity constraint (in demand units)
-    :constraints:                   named tuple of "dist_constraint" (int) to use as distance 
+    :constraints:                   named tuple of "dist_constraint" (int) to use as distance
                                     upper bound
-                                    "soft_dist_constraint" (int) for soft upper bound constraint 
+                                    "soft_dist_constraint" (int) for soft upper bound constraint
                                     for vehicle distances
-                                    "soft_dist_penalty" (int) for soft upper bound penalty for 
+                                    "soft_dist_penalty" (int) for soft upper bound penalty for
                                     exceeding distance constraint
     :max_search_seconds:            int of solve time
 
@@ -135,7 +135,7 @@ def solve(
     if assignment:
 
         STOP_TYPE = Tuple[int, float, float, int, float]
-        STOP = namedtuple("Stop", ["idx", "lat", "lon", "demand", "dist"])
+        Stop = namedtuple("Stop", ["idx", "lat", "lon", "demand", "dist"])
 
         solution = []
         for _route_number in range(model.vehicles()):
@@ -158,7 +158,7 @@ def solve(
                     demand = DEMAND[node_index]
                     dist = DISTANCE_MATRIX[prev_node_index][node_index]
 
-                    route.append(STOP(node_index, lat, lon, demand, dist))
+                    route.append(Stop(node_index, lat, lon, demand, dist))
 
                     if model.IsEnd(idx):
                         break

@@ -49,9 +49,9 @@ assert len(DEST_LATS) == len(DEST_LONS)
 
 # depot data
 ORIGIN_TYPE = Tuple[float, float]
-ORIGIN: ORIGIN_TYPE = namedtuple("Origin", ["lat", "lon"])
+Origin: ORIGIN_TYPE = namedtuple("Origin", ["lat", "lon"])
 ORIGINS: List[ORIGIN_TYPE] = [
-    ORIGIN(ORIGIN_LATS[i], ORIGIN_LONS[i]) for i in range(len(ORIGIN_LATS))
+    Origin(ORIGIN_LATS[i], ORIGIN_LONS[i]) for i in range(len(ORIGIN_LATS))
 ]
 
 # flow data (includes origin as 0th index)
@@ -71,16 +71,16 @@ assert all(x < MAX_VEHICLE_CAP for x in ALL_DEMANDS)
 
 DEMAND_TYPE = Tuple[float, float, int]
 # TODO: add windows, dim_x, dim_y
-DEMAND: DEMAND_TYPE = namedtuple("Demand", ["lat", "lon", "qty"])
+Demand: DEMAND_TYPE = namedtuple("Demand", ["lat", "lon", "qty"])
 # NOTE: assumes QUANTITIES has origin qty at index 0
 DEMANDS: List[DEMAND_TYPE] = [
-    DEMAND(DEST_LATS[i], DEST_LONS[i], ALL_DEMANDS[i + 1])
+    Demand(DEST_LATS[i], DEST_LONS[i], ALL_DEMANDS[i + 1])
     for i in range(len(DEST_LATS))
 ]
 
 VEHICLE_TYPE = Tuple[int, int]
-VEHICLE: VEHICLE_TYPE = namedtuple("Vehicle", ["cap"])
-VEHICLES: List[VEHICLE_TYPE] = [VEHICLE(MAX_VEHICLE_CAP) for i in range(NUM_VEHICLES)]
+Vehicle: VEHICLE_TYPE = namedtuple("Vehicle", ["cap"])
+VEHICLES: List[VEHICLE_TYPE] = [Vehicle(MAX_VEHICLE_CAP) for i in range(NUM_VEHICLES)]
 
 
 # %%
@@ -97,8 +97,11 @@ DIST_MATRIX: List[List[int]] = distance.create_matrix(
 from src import model
 
 CONSTRAINTS_TYPE = Tuple[int, int, int]
-CONSTRAINTS: CONSTRAINTS_TYPE = namedtuple(
+Constraints: CONSTRAINTS_TYPE = namedtuple(
     "Constraint", ["dist_constraint", "soft_dist_constraint", "soft_dist_penalty"]
+)
+CONSTRAINTS = Constraints(
+    dist_constraint=100000, soft_dist_constraint=75000, soft_dist_penalty=100000
 )
 
 solution = model.solve(
@@ -107,9 +110,7 @@ solution = model.solve(
     demand=ALL_DEMANDS,
     vehicles=VEHICLES,
     depot_index=0,
-    constraints=CONSTRAINTS(
-        dist_constraint=100000, soft_dist_constraint=75000, soft_dist_penalty=100000
-    ),
+    constraints=CONSTRAINTS,
 )
 
 model.visualize_solution(solution)
