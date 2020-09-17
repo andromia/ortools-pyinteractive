@@ -31,10 +31,8 @@ def solve(
     distance_matrix: List[List[int]],
     demand: List[int],
     vehicles: List[Tuple[int]],
-    depot_index: int = 0,
-    distance_constraint_int: int = 100000,
-    soft_distance_constrint_int: int = None,
-    soft_distance_penalty: int = 100000,
+    depot_index: int,
+    constraints: Tuple[int, int, int],
     max_search_seconds: int = 5,
 ) -> "Solution":
     """
@@ -46,18 +44,21 @@ def solve(
     :demand_quantities:             [int, int, ... len(demand nodes) - 1]
     :vehicles:                      list of namedtuples containing "cap" (int) for vehicle
                                     capacity constraint (in demand units)
-    :distance_constraint_int:       int (processed for distance matrix precision) to use as
-                                    distance upper bound
-    :soft_distance_constrint_int:   soft upper bound constraint for vehicle distances
-    :soft_distance_penalty:         soft upper bound penalty for exceeding distance constraint
+    :constraints:                   named tuple of "dist_constraint" (int) to use as distance 
+                                    upper bound
+                                    "soft_dist_constraint" (int) for soft upper bound constraint 
+                                    for vehicle distances
+                                    "soft_dist_penalty" (int) for soft upper bound penalty for 
+                                    exceeding distance constraint
+    :max_search_seconds:            int of solve time
 
     TODO:
-        - update with namedtuple usage
-        - use nodes list to handle as much as possible
-        - handle integer precision entirely
-        - refactor into smaller functions
-        - refactor with less arg complexity (better arg and config management)
-        - add solution type
+    [ ] update with namedtuple usage
+    [ ] use nodes list to handle as much as possible
+    [ ] handle integer precision entirely
+    [ ] refactor into smaller functions
+    [ ] refactor with less arg complexity (better arg and config management)
+    [ ] add solution type
 
     """
     NODES = nodes
@@ -72,14 +73,9 @@ def solve(
     VEHICLES = vehicles
     NUM_VEHICLES = len(VEHICLES)
     DEPOT_INDEX = depot_index
-    DISTANCE_CONSTRAINT = distance_constraint_int
-
-    if not soft_distance_constrint_int:
-        SOFT_DISTANCE_CONSTRAINT = int(DISTANCE_CONSTRAINT * 0.75)
-    else:
-        SOFT_DISTANCE_CONSTRAINT = distance_constraint_int
-
-    SOFT_DISTANCE_PENALTY = soft_distance_penalty
+    DISTANCE_CONSTRAINT = constraints.dist_constraint
+    SOFT_DISTANCE_CONSTRAINT = constraints.soft_dist_constraint
+    SOFT_DISTANCE_PENALTY = constraints.soft_dist_penalty
     MAX_SEARCH_SECONDS = max_search_seconds
 
     manager = pywrapcp.RoutingIndexManager(NUM_NODES, NUM_VEHICLES, depot_index)
@@ -106,7 +102,7 @@ def solve(
     model.AddDimensionWithVehicleCapacity(
         callback_id,
         0,  # 0 slack
-        [distance_constraint_int for i in range(NUM_VEHICLES)],
+        [DISTANCE_CONSTRAINT for i in range(NUM_VEHICLES)],
         True,  # start to zero
         "Distance",
     )

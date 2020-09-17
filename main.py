@@ -96,12 +96,20 @@ DIST_MATRIX: List[List[int]] = distance.create_matrix(
 #::ORTOOLS MODEL
 from src import model
 
+CONSTRAINTS_TYPE = Tuple[int, int, int]
+CONSTRAINTS: CONSTRAINTS_TYPE = namedtuple(
+    "Constraint", ["dist_constraint", "soft_dist_constraint", "soft_dist_penalty"]
+)
+
 solution = model.solve(
     nodes=ORIGINS + DEMANDS,
     distance_matrix=DIST_MATRIX,
     demand=ALL_DEMANDS,
     vehicles=VEHICLES,
     depot_index=0,
+    constraints=CONSTRAINTS(
+        dist_constraint=100000, soft_dist_constraint=75000, soft_dist_penalty=100000
+    ),
 )
 
 model.visualize_solution(solution)
