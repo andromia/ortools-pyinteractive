@@ -14,13 +14,6 @@
 # TODO: either figure out how people deal with this or write a linter
 from typing import List, Tuple  # TODO: typing for numpy arrays?
 from collections import namedtuple
-from ortools.constraint_solver import pywrapcp, routing_enums_pb2
-from haversine import haversine_vector, Unit
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-
-from src import cluster
 
 
 # integer processing
@@ -94,270 +87,22 @@ VEHICLES: List[VEHICLE_TYPE] = [
 
 # %%
 #::DISTANCE DATA PROCESSING
+from src import distance
 
-
-def create_vectorized_haversine_li(
-    _olat: float,
-    _olon: float,
-    _dlats: List[float],
-    _dlons: List[float],
-) -> List[float]:
-    assert len(_dlats) == len(_dlons)
-
-    _olats: List[float] = [_olat] * len(_dlats)
-    _olons: List[float] = [_olon] * len(_dlons)
-    _os: List[Tuple[float, float]] = list(zip(_olats, _olons))
-    _ds: List[Tuple[float, float]] = list(zip(_dlats, _dlons))
-
-    _ds: List[float] = haversine_vector(_os, _ds, unit=Unit.MILES)
-
-    return _ds
-
-
-def create_matrix(_origin: ORIGIN_TYPE, _dests: DEMAND_TYPE) -> List[List[int]]:
-    """
-    creates matrix using optimized matrix processing. distances
-    are converted to integers (x*100).
-
-    :_origin:    (origin.lat: float, origin.lon: float)
-    :_dests:     list of demands; (demand.lat, demand.lon)
-
-    returns _matrix: list[list, ..., len(origin+dests)]
-    """
-    _LATS: List[float] = [_origin.lat] + [d.lat for d in _dests]
-    _LONS: List[float] = [_origin.lon] + [d.lon for d in _dests]
-
-    assert len(_LATS) == len(_LONS)
-
-    _matrix: List[List[int]] = []
-    for _i in range(len(_LATS)):
-        _fdistances: List[float] = create_vectorized_haversine_li(
-            _olat=_LATS[_i], _olon=_LONS[_i], _dlats=_LATS, _dlons=_LONS
-        )
-
-        _idistances: List[int] = np.ceil(_fdistances * INT_PRECISION).astype(int)
-        _matrix.append(_idistances)
-
-    return _matrix
-
-
-DIST_MATRIX: List[List[int]] = create_matrix(_origin=ORIGINS[0], _dests=DEMANDS)
+DIST_MATRIX: List[List[int]] = distance.create_matrix(
+    _origin=ORIGINS[0], _dests=DEMANDS
+)
 
 
 # %%
-#::ORTOOLS MODEL SETUP
+#::ORTOOLS MODEL
+from src import model
 
-
-NUM_NODES = len(DIST_MATRIX)
-DEPOT_INDEX = 0
-
-manager = pywrapcp.RoutingIndexManager(NUM_NODES, NUM_VEHICLES, DEPOT_INDEX)
-
-
-def matrix_callback(_i: int, _j: int) -> int:
-    """index of from (i) and to (j)"""
-    _node_i = manager.IndexToNode(_i)
-    _node_j = manager.IndexToNode(_j)
-    _d: int = DIST_MATRIX[_node_i][_node_j]
-
-    return _d
-
-
-def demand_callback(_i: int) -> int:
-    """capacity constraint"""
-    _d = ALL_DEMANDS[manager.IndexToNode(_i)]
-
-    return _d
-
-
-model = pywrapcp.RoutingModel(manager)
-
-# distance constraints
-callback_id = model.RegisterTransitCallback(matrix_callback)
-model.SetArcCostEvaluatorOfAllVehicles(callback_id)
-model.AddDimensionWithVehicleCapacity(
-    callback_id,
-    0,  # 0 slack
-    [MAX_VEHICLE_DIST for i in range(NUM_VEHICLES)],
-    True,  # start to zero
-    "Distance",
+solution = model.solve(
+    nodes=ORIGINS + DEMANDS,
+    distance_matrix=DIST_MATRIX,
+    demand=ALL_DEMANDS,
+    depot_index=0,
 )
 
-# demand constraint setup
-model.AddDimensionWithVehicleCapacity(
-    # function which return the load at each location (cf. cvrp.py example)
-    model.RegisterUnaryTransitCallback(demand_callback),
-    0,  # null capacity slack
-    [v.qty_cap for v in VEHICLES],  # vehicle maximum capacity
-    True,  # start cumul to zero
-    "Capacity",
-)
-
-dst_dim = model.GetDimensionOrDie("Distance")
-for i in range(manager.GetNumberOfVehicles()):
-    end_idx = model.End(i)
-    dst_dim.SetCumulVarSoftUpperBound(
-        end_idx, SOFT_MAX_VEHICLE_DIST, SOFT_MAX_VEHICLE_COST
-    )
-
-
-MAX_SEARCH_SECONDS: int = 5
-
-search_parameters = pywrapcp.DefaultRoutingSearchParameters()
-search_parameters.first_solution_strategy = (
-    routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
-)
-search_parameters.time_limit.seconds = MAX_SEARCH_SECONDS
-
-# %%
-#::SOLVE MODEL
-
-
-assignment = model.SolveWithParameters(search_parameters)
-
-STOP_TYPE = Tuple[int, float, float, int, float]
-
-
-def get_solution(_manager, _model, _assignment) -> List[List[STOP_TYPE]]:
-    """
-    Returns solution data containing each route and their Stops.
-
-    :_model:       (ortools.constraint_solver.pywrapcp.RoutingModel): _model.
-    :_assignment: (ortools.constraint_solver.pywrapcp.Assignment): the assignment.
-
-    Returns: _solution: list[list[Stop]]
-    """
-    _STOP = namedtuple("Stop", ["idx", "lat", "lon", "demand", "dist"])
-
-    _solution = []
-    for _route_number in range(_model.vehicles()):
-        _route = []
-        _idx = _model.Start(_route_number)
-
-        if _model.IsEnd(_assignment.Value(_model.NextVar(_idx))):
-            continue
-
-        else:
-            _prev_node = _manager.IndexToNode(_idx)
-
-            while True:
-
-                # TODO: time_var = time_dimension.CumulVar(order)
-                _node = _manager.IndexToNode(_idx)
-
-                if _node == DEPOT_INDEX:
-                    _lat = ORIGINS[0].lat
-                    _lon = ORIGINS[0].lon
-                else:
-                    _lat = DEMANDS[_node - 1].lat
-                    _lon = DEMANDS[_node - 1].lon
-
-                _demand = ALL_DEMANDS[_node]
-                _dist = DIST_MATRIX[_prev_node][_node] / INT_PRECISION
-
-                _route.append(_STOP(_node, _lat, _lon, _demand, _dist))
-
-                if _model.IsEnd(_idx):
-                    break
-
-                _prev_node = _node
-                _idx = _assignment.Value(_model.NextVar(_idx))
-
-        _solution.append(_route)
-
-    return _solution
-
-
-def get_dropped_nodes(_model, _assignment) -> List[str]:
-    _dropped = []
-    for _idx in range(_model.Size()):
-        if _assignment.Value(_model.NextVar(_idx)) == _idx:
-            _dropped.append(str(_idx))
-
-    return _dropped
-
-
-def get_solution_str(_solution) -> str:
-    _str = ""
-    for _i, _r in enumerate(_solution):
-        _str += f"Route(idx={_i})\n"
-        _s = "\n".join("{}: {}".format(*k) for k in enumerate(_r))
-        _str += _s + "\n\n"
-
-    return _str
-
-
-def visualize_solution(_solution) -> None:
-    # base
-    _lats = []
-    _lons = []
-    _text = []
-
-    # lines
-    _lat_paths = []
-    _lon_paths = []
-    for _i, _r in enumerate(_solution):
-        for _j, _s in enumerate(_r):
-            _lats.append(_s.lat)
-            _lons.append(_s.lon)
-            _text.append(f"demand: {_r[_j].demand}")
-
-            if _j < len(_r) - 1:
-                _lat_paths.append([_s.lat, _r[_j + 1].lat])
-                _lon_paths.append([_s.lon, _r[_j + 1].lon])
-
-    _fig = go.Figure()
-
-    _fig.add_trace(
-        go.Scattergeo(
-            locationmode="USA-states",
-            lat=_lats,
-            lon=_lons,
-            hoverinfo="text",
-            text=_text,
-            mode="markers",
-            marker=dict(
-                size=5,
-                color="rgb(255, 0, 0)",
-                line=dict(width=3, color="rgba(68, 68, 68, 0)"),
-            ),
-        )
-    )
-
-    for i in range(len(_lat_paths)):
-        _fig.add_trace(
-            go.Scattergeo(
-                locationmode="USA-states",
-                lat=[_lat_paths[i][0], _lat_paths[i][1]],
-                lon=[_lon_paths[i][0], _lon_paths[i][1]],
-                mode="lines",
-                line=dict(width=1, color="red"),
-                # opacity = float(df_flight_paths['cnt'][i]) / float(df_flight_paths['cnt'].max()),
-            )
-        )
-
-    _fig.update_layout(
-        title_text="",
-        showlegend=False,
-        template="plotly_dark",
-        geo=dict(
-            scope="north america",
-            projection_type="azimuthal equal area",
-            showland=True,
-            landcolor="rgb(243, 243, 243)",
-            countrycolor="rgb(204, 204, 204)",
-        ),
-    )
-
-    _fig.show()
-
-
-if assignment:
-
-    solution = get_solution(_manager=manager, _model=model, _assignment=assignment)
-    dropped = get_dropped_nodes(model, assignment)
-    _str = get_solution_str(solution)
-
-    print(f"solution:\n{_str}" + f"dropped:\n{dropped}")
-
-    visualize_solution(solution)
+model.visualize_solution(solution)
