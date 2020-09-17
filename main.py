@@ -79,10 +79,8 @@ DEMANDS: List[DEMAND_TYPE] = [
 ]
 
 VEHICLE_TYPE = Tuple[int, int]
-VEHICLE: VEHICLE_TYPE = namedtuple("Vehicle", ["qty_cap", "max_dist"])
-VEHICLES: List[VEHICLE_TYPE] = [
-    VEHICLE(MAX_VEHICLE_CAP, MAX_VEHICLE_DIST) for i in range(NUM_VEHICLES)
-]
+VEHICLE: VEHICLE_TYPE = namedtuple("Vehicle", ["cap"])
+VEHICLES: List[VEHICLE_TYPE] = [VEHICLE(MAX_VEHICLE_CAP) for i in range(NUM_VEHICLES)]
 
 
 # %%
@@ -102,6 +100,7 @@ solution = model.solve(
     nodes=ORIGINS + DEMANDS,
     distance_matrix=DIST_MATRIX,
     demand=ALL_DEMANDS,
+    vehicles=VEHICLES,
     depot_index=0,
 )
 

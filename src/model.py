@@ -30,9 +30,8 @@ def solve(
     nodes: List[Tuple[float, float, int]],
     distance_matrix: List[List[int]],
     demand: List[int],
+    vehicles: List[Tuple[int]],
     depot_index: int = 0,
-    vehicle_cap: int = 26,
-    num_vehicles: int = None,
     distance_constraint_int: int = 100000,
     soft_distance_constrint_int: int = None,
     soft_distance_penalty: int = 100000,
@@ -45,8 +44,8 @@ def solve(
                                     at node 0 and demand nodes at 1 -> len(matrix) - 1 processed
                                     at a known precision
     :demand_quantities:             [int, int, ... len(demand nodes) - 1]
-    :max_vehicle_capacity_units:    int for vehicle capacity constraint (in demand units)
-    :num_vehicles:                  int for number of vehicle allowance
+    :vehicles:                      list of namedtuples containing "cap" (int) for vehicle
+                                    capacity constraint (in demand units)
     :distance_constraint_int:       int (processed for distance matrix precision) to use as
                                     distance upper bound
     :soft_distance_constrint_int:   soft upper bound constraint for vehicle distances
@@ -63,22 +62,16 @@ def solve(
     """
     NODES = nodes
     DISTANCE_MATRIX = distance_matrix
-    NUM_NODES = len(distance_matrix)
+    NUM_NODES = len(nodes)
 
     if len(distance_matrix) - 1 == len(demand):
         DEMAND = [0] + list(demand)
     else:
         DEMAND = demand
 
+    VEHICLES = vehicles
+    NUM_VEHICLES = len(VEHICLES)
     DEPOT_INDEX = depot_index
-    VEHICLE_CAP = vehicle_cap
-
-    if not num_vehicles:
-        NUM_VEHICLES = len(DEMAND[1:])
-    else:
-        NUM_VEHICLES = num_vehicles
-
-    VEHICLES = [vehicle_cap for i in range(NUM_VEHICLES)]
     DISTANCE_CONSTRAINT = distance_constraint_int
 
     if not soft_distance_constrint_int:
@@ -123,7 +116,7 @@ def solve(
         # function which return the load at each location (cf. cvrp.py example)
         model.RegisterUnaryTransitCallback(demand_callback),
         0,  # null capacity slack
-        [cap for cap in VEHICLES],  # vehicle maximum capacity
+        [v.cap for v in VEHICLES],  # vehicle maximum capacity
         True,  # start cumul to zero
         "Capacity",
     )
