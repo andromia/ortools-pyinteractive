@@ -58,7 +58,9 @@ class DBSCAN:
                 self.build_cluster(i, points, cluster)
 
 
-def add_closest_clusters(x: List[float], y: List[float], clusters: List[int]):
+def add_closest_clusters(
+    x: List[float], y: List[float], clusters: List[int]
+) -> np.ndarray:
     """
     Takes a list of x, a list of y, and a list of clusters to
     process clusters for x, y without an assigned cluster.
@@ -96,7 +98,7 @@ def add_closest_clusters(x: List[float], y: List[float], clusters: List[int]):
     return clusters
 
 
-def create_dbscan_basic(x: List[float], y: List[float]):
+def create_dbscan_basic(x: List[float], y: List[float]) -> DBSCAN:
     """
     Instantiates a basic instance of DBSCAN.
 
@@ -115,7 +117,7 @@ def create_dbscan_basic(x: List[float], y: List[float]):
     return dbscan
 
 
-def create_dbscan_clusters(lats: List[float], lons: List[float]):
+def create_dbscan_clusters(lats: List[float], lons: List[float]) -> np.ndarray:
     """
     Uses DBSCAN clustering algorithm to identify groups of nodes based
     on their distance from eachother

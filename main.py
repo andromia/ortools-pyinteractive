@@ -84,17 +84,24 @@ VEHICLES: List[VEHICLE_TYPE] = [Vehicle(MAX_VEHICLE_CAP) for i in range(NUM_VEHI
 
 
 # %%
-#::DISTANCE DATA PROCESSING
+#::CLUSTER PROCESSING
+from src import cluster
+
+clusters = cluster.create_dbscan_clusters(
+    lats=[d.lat for d in DEMANDS], lons=[d.lon for d in DEMANDS]
+)
+
+# %%
+#::ORTOOLS MODEL
 from src import distance
+from src import model
+
+import numpy as np
+
 
 DIST_MATRIX: List[List[int]] = distance.create_matrix(
     _origin=ORIGINS[0], _dests=DEMANDS
 )
-
-
-# %%
-#::ORTOOLS MODEL
-from src import model
 
 CONSTRAINTS_TYPE = Tuple[int, int, int]
 Constraints: CONSTRAINTS_TYPE = namedtuple(
@@ -104,13 +111,24 @@ CONSTRAINTS = Constraints(
     dist_constraint=100000, soft_dist_constraint=75000, soft_dist_penalty=100000
 )
 
-solution = model.solve(
-    nodes=ORIGINS + DEMANDS,
-    distance_matrix=DIST_MATRIX,
-    demand=ALL_DEMANDS,
-    vehicles=VEHICLES,
-    depot_index=0,
-    constraints=CONSTRAINTS,
-)
+solutions = []
+for i, c in enumerate(np.unique(clusters)):
 
-model.visualize_solution(solution)
+    # align with matrix
+    is_cluster = np.where(clusters == c)[0]
+    is_cluster = is_cluster + 1
+    is_cluster = np.insert(is_cluster, 0, 0)
+
+    solution = model.solve(
+        nodes=[(ORIGINS + DEMANDS)[j] for j in is_cluster],
+        distance_matrix=[DIST_MATRIX[j] for j in is_cluster],
+        demand=[ALL_DEMANDS[j] for j in is_cluster],
+        vehicles=[VEHICLES[j] for j in is_cluster],
+        depot_index=0,
+        constraints=CONSTRAINTS,
+    )
+
+    solutions.append(solution)
+
+
+# model.visualize_solution(solution)
