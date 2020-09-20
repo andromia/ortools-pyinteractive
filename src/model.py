@@ -174,7 +174,7 @@ def solve(
         return solution
 
 
-def visualize_solution(solution: "Solution") -> None:
+def visualize_solution(vehicles: "Vehicles") -> None:
     # base
     lats = []
     lons = []
@@ -183,15 +183,15 @@ def visualize_solution(solution: "Solution") -> None:
     # lines
     lat_paths = []
     lon_paths = []
-    for i, r in enumerate(solution):
-        for j, s in enumerate(r):
-            lats.append(s.lat)
-            lons.append(s.lon)
+    for i, r in enumerate(vehicles):
+        for j, v in enumerate(r):
+            lats.append(v.lat)
+            lons.append(v.lon)
             text.append(f"demand: {r[j].demand}")
 
             if j < len(r) - 1:
-                lat_paths.append([s.lat, r[j + 1].lat])
-                lon_paths.append([s.lon, r[j + 1].lon])
+                lat_paths.append([v.lat, r[j + 1].lat])
+                lon_paths.append([v.lon, r[j + 1].lon])
 
     fig = go.Figure()
 

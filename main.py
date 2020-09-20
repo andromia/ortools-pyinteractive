@@ -100,7 +100,7 @@ MATRIX_ARR: np.ndarray = np.array(DIST_MATRIX)
 DEMAND_ARR: np.ndarray = np.array(ALL_DEMANDS)
 VEHICLE_CAP_ARR: np.ndarray = np.array(VEHICLE_CAPACITIES)
 
-solutions = []
+vehicles = []
 for i, c in enumerate(np.unique(CLUSTERS)):
 
     # align with matrix
@@ -117,7 +117,7 @@ for i, c in enumerate(np.unique(CLUSTERS)):
         constraints=CONSTRAINTS,
     )
 
-    solutions.append(solution)
+    for vehicle in solution:
+        vehicles.append(vehicle)
 
-
-# model.visualize_solution(solution)
+model.visualize_solution(vehicles)
