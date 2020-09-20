@@ -27,10 +27,10 @@ def get_solution_str(solution: "Solution") -> str:
 
 
 def solve(
-    nodes: List[Tuple[float, float, int]],
+    nodes: List[Tuple[float, float]],
     distance_matrix: List[List[int]],
     demand: List[int],
-    vehicles: List[Tuple[int]],
+    vehicle_caps: List[int],
     depot_index: int,
     constraints: Tuple[int, int, int],
     max_search_seconds: int = 5,
@@ -38,12 +38,13 @@ def solve(
     """
     high level implementation of an ortools capacitated vehicle routing model.
 
+    :nodes:                         list of tuples containing nodes (origin at index 0) with
+                                    lat(float), lon(float)
     :distance_matrix:               [[int, int, int, ...], [...] ...] distance matrix of origin
                                     at node 0 and demand nodes at 1 -> len(matrix) - 1 processed
                                     at a known precision
     :demand_quantities:             [int, int, ... len(demand nodes) - 1]
-    :vehicles:                      list of namedtuples containing "cap" (int) for vehicle
-                                    capacity constraint (in demand units)
+    :vehicle_caps:                      list of integers for vehicle capacity constraint (in demand units)
     :constraints:                   named tuple of "dist_constraint" (int) to use as distance
                                     upper bound
                                     "soft_dist_constraint" (int) for soft upper bound constraint
@@ -70,9 +71,11 @@ def solve(
     else:
         DEMAND = demand
 
-    VEHICLES = vehicles
-    NUM_VEHICLES = len(VEHICLES)
+    # TODO: define a vehicle better
+    VEHICLE_CAPS = vehicle_caps
+    NUM_VEHICLES = len(VEHICLE_CAPS)
     DEPOT_INDEX = depot_index
+    # TODO: can make these per vehicle
     DISTANCE_CONSTRAINT = constraints.dist_constraint
     SOFT_DISTANCE_CONSTRAINT = constraints.soft_dist_constraint
     SOFT_DISTANCE_PENALTY = constraints.soft_dist_penalty
@@ -112,7 +115,7 @@ def solve(
         # function which return the load at each location (cf. cvrp.py example)
         model.RegisterUnaryTransitCallback(demand_callback),
         0,  # null capacity slack
-        [v.cap for v in VEHICLES],  # vehicle maximum capacity
+        VEHICLE_CAPS,  # vehicle maximum capacity
         True,  # start cumul to zero
         "Capacity",
     )
@@ -152,8 +155,8 @@ def solve(
 
                     # TODO: time_var = time_dimension.CumulVar(order)
                     node_index = manager.IndexToNode(idx)
-                    lat = NODES[node_index].lat
-                    lon = NODES[node_index].lon
+                    lat = NODES[node_index]["lat"]
+                    lon = NODES[node_index]["lon"]
 
                     demand = DEMAND[node_index]
                     dist = DISTANCE_MATRIX[prev_node_index][node_index]

@@ -4,26 +4,28 @@ import numpy as np
 
 
 def create_vectorized_haversine_li(
-    _olat: float,
-    _olon: float,
-    _dlats: List[float],
-    _dlons: List[float],
+    olat: float,
+    olon: float,
+    dlats: List[float],
+    dlons: List[float],
 ) -> List[float]:
-    assert len(_dlats) == len(_dlons)
+    assert len(dlats) == len(dlons)
 
-    _olats: List[float] = [_olat] * len(_dlats)
-    _olons: List[float] = [_olon] * len(_dlons)
-    _os: List[Tuple[float, float]] = list(zip(_olats, _olons))
-    _ds: List[Tuple[float, float]] = list(zip(_dlats, _dlons))
+    olats: List[float] = [olat] * len(dlats)
+    olons: List[float] = [olon] * len(dlons)
+    os: List[Tuple[float, float]] = list(zip(olats, olons))
+    ds: List[Tuple[float, float]] = list(zip(dlats, dlons))
 
-    _ds: List[float] = haversine_vector(_os, _ds, unit=Unit.MILES)
+    ds: List[float] = haversine_vector(os, ds, unit=Unit.MILES)
 
-    return _ds
+    return ds
 
 
 def create_matrix(
-    _origin: Tuple[float, float],
-    _dests: Tuple[float, float, int],
+    origin_lat: float,
+    origin_lon: float,
+    dest_lats: List[float],
+    dest_lons: List[float],
     int_precision: int = 100,
 ) -> List[List[int]]:
     """
@@ -35,18 +37,18 @@ def create_matrix(
 
     returns _matrix: list[list, ..., len(origin+dests)]
     """
-    _LATS: List[float] = [_origin.lat] + [d.lat for d in _dests]
-    _LONS: List[float] = [_origin.lon] + [d.lon for d in _dests]
+    LATS: List[float] = [origin_lat] + dest_lats
+    LONS: List[float] = [origin_lon] + dest_lons
 
-    assert len(_LATS) == len(_LONS)
+    assert len(LATS) == len(LONS)
 
-    _matrix: List[List[int]] = []
-    for _i in range(len(_LATS)):
-        _fdistances: List[float] = create_vectorized_haversine_li(
-            _olat=_LATS[_i], _olon=_LONS[_i], _dlats=_LATS, _dlons=_LONS
+    matrix: List[List[int]] = []
+    for i in range(len(LATS)):
+        fdistances: List[float] = create_vectorized_haversine_li(
+            olat=LATS[i], olon=LONS[i], dlats=LATS, dlons=LONS
         )
 
-        _idistances: List[int] = np.ceil(_fdistances * int_precision).astype(int)
-        _matrix.append(_idistances)
+        idistances: List[int] = np.ceil(fdistances * int_precision).astype(int)
+        matrix.append(idistances)
 
-    return _matrix
+    return matrix
