@@ -97,8 +97,9 @@ CONSTRAINTS = Constraints(
 )
 
 NODES_ARR: np.ndarray = np.array(
-    [(ORIGIN_LAT, ORIGIN_LON)] + list(zip(DEST_LATS, DEST_LONS)),
-    dtype=[("lat", float), ("lon", float)],
+    [(0, ORIGIN_LAT, ORIGIN_LON)]
+    + list(zip(list(range(1, len(ALL_DEMANDS))), DEST_LATS, DEST_LONS)),
+    dtype=[("idx", int), ("lat", float), ("lon", float)],
 )
 MATRIX_ARR: np.ndarray = np.array(DIST_MATRIX)
 DEMAND_ARR: np.ndarray = np.array(ALL_DEMANDS)

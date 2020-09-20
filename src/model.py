@@ -155,13 +155,14 @@ def solve(
 
                     # TODO: time_var = time_dimension.CumulVar(order)
                     node_index = manager.IndexToNode(idx)
+                    original_idx = NODES[node_index]["idx"]
                     lat = NODES[node_index]["lat"]
                     lon = NODES[node_index]["lon"]
 
                     demand = DEMAND[node_index]
                     dist = DISTANCE_MATRIX[prev_node_index][node_index]
 
-                    route.append(Stop(node_index, lat, lon, demand, dist))
+                    route.append(Stop(original_idx, lat, lon, demand, dist))
 
                     if model.IsEnd(idx):
                         break
