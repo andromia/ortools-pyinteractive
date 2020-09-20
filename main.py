@@ -32,6 +32,7 @@ DEST_LATS: List[float] = [
     39.94745,
     33.93216,
     40.82196,
+    40.10201,
 ]
 DEST_LONS: List[float] = [
     -80.25643,
@@ -41,12 +42,13 @@ DEST_LONS: List[float] = [
     -75.14733,
     -83.35259,
     -74.42669,
+    -110.23992,
 ]
 
 assert len(DEST_LATS) == len(DEST_LONS)
 
 # flow data (includes origin as 0th index)
-ALL_DEMANDS: List[int] = [0, 5, 3, 7, 10, 15, 7, 8]
+ALL_DEMANDS: List[int] = [0, 5, 3, 7, 10, 15, 7, 8, 10]
 
 assert len(ALL_DEMANDS) == len(DEST_LATS) + 1
 assert len(ALL_DEMANDS) == len(DEST_LONS) + 1
@@ -89,7 +91,9 @@ Constraints: CONSTRAINTS_TYPE = namedtuple(
     "Constraint", ["dist_constraint", "soft_dist_constraint", "soft_dist_penalty"]
 )
 CONSTRAINTS = Constraints(
-    dist_constraint=100000, soft_dist_constraint=75000, soft_dist_penalty=100000
+    dist_constraint=MAX_VEHICLE_DIST,
+    soft_dist_constraint=SOFT_MAX_VEHICLE_DIST,
+    soft_dist_penalty=SOFT_MAX_VEHICLE_COST,
 )
 
 NODES_ARR: np.ndarray = np.array(
@@ -100,6 +104,9 @@ MATRIX_ARR: np.ndarray = np.array(DIST_MATRIX)
 DEMAND_ARR: np.ndarray = np.array(ALL_DEMANDS)
 VEHICLE_CAP_ARR: np.ndarray = np.array(VEHICLE_CAPACITIES)
 
+# preprocess exceptions based on MAX_VEHICLE_DIST
+EXCEPTIONS = np.where(MATRIX_ARR[0] > MAX_VEHICLE_DIST)
+
 vehicles = []
 for i, c in enumerate(np.unique(CLUSTERS)):
 
@@ -107,6 +114,7 @@ for i, c in enumerate(np.unique(CLUSTERS)):
     is_cluster = np.where(CLUSTERS == c)[0]
     is_cluster = is_cluster + 1
     is_cluster = np.insert(is_cluster, 0, 0)
+    is_cluster = is_cluster[~np.isin(is_cluster, EXCEPTIONS)]
 
     solution = model.solve(
         nodes=NODES_ARR[is_cluster],
