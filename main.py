@@ -3,7 +3,7 @@
 
 """TODO:
 [x] Capacity
-[ ] Distance
+[X] Distance
 [ ] Travel Time
 [ ] Windows
 [ ] Cost
