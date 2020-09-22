@@ -4,8 +4,8 @@
 """TODO:
 [x] Capacity
 [X] Distance
-[ ] Travel Time
-[ ] Windows
+[X] Windows
+[X] Travel Time NOTE: excluding layover/etc.
 [ ] Cost
 [ ] Business Penalties
 [ ] Dev Tooling
@@ -86,6 +86,12 @@ DIST_MATRIX: List[List[int]] = distance.create_matrix(
     dest_lons=DEST_LONS,
 )
 
+TIME_MATRIX: List[List[int]] = (
+    (np.array(DIST_MATRIX) / 440 / INT_PRECISION).round(0).astype(int)
+)
+
+TIME_WINDOWS: List[Tuple[int, int]] = [(8, 17)] * len(DIST_MATRIX)
+
 CONSTRAINTS_TYPE = Tuple[int, int, int]
 Constraints: CONSTRAINTS_TYPE = namedtuple(
     "Constraint", ["dist_constraint", "soft_dist_constraint", "soft_dist_penalty"]
@@ -101,12 +107,14 @@ NODES_ARR: np.ndarray = np.array(
     + list(zip(list(range(1, len(ALL_DEMANDS))), DEST_LATS, DEST_LONS)),
     dtype=[("idx", int), ("lat", float), ("lon", float)],
 )
-MATRIX_ARR: np.ndarray = np.array(DIST_MATRIX)
+DIST_MATRIX_ARR: np.ndarray = np.array(DIST_MATRIX)
+WINDOWS_MATRIX_ARR: np.ndarray = np.array(TIME_MATRIX)
+WINDOWS_ARR: np.ndarray = np.array(TIME_WINDOWS, dtype=object)
 DEMAND_ARR: np.ndarray = np.array(ALL_DEMANDS)
 VEHICLE_CAP_ARR: np.ndarray = np.array(VEHICLE_CAPACITIES)
 
 # preprocess exceptions based on MAX_VEHICLE_DIST
-EXCEPTIONS = np.where(MATRIX_ARR[0] > MAX_VEHICLE_DIST)
+EXCEPTIONS = np.where(DIST_MATRIX_ARR[0] > MAX_VEHICLE_DIST)
 
 vehicles = []
 for i, c in enumerate(np.unique(CLUSTERS)):
@@ -119,7 +127,9 @@ for i, c in enumerate(np.unique(CLUSTERS)):
 
     solution = model.solve(
         nodes=NODES_ARR[is_cluster],
-        distance_matrix=MATRIX_ARR[is_cluster],
+        distance_matrix=DIST_MATRIX_ARR[is_cluster],
+        time_matrix=WINDOWS_MATRIX_ARR[is_cluster],
+        time_windows=WINDOWS_ARR[is_cluster],
         demand=DEMAND_ARR[is_cluster],
         vehicle_caps=VEHICLE_CAP_ARR[is_cluster],
         depot_index=0,

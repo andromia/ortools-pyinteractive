@@ -29,6 +29,8 @@ def get_solution_str(solution: "Solution") -> str:
 def solve(
     nodes: List[Tuple[float, float]],
     distance_matrix: List[List[int]],
+    time_matrix: List[List[int]],
+    time_windows: List[Tuple[int, int]],
     demand: List[int],
     vehicle_caps: List[int],
     depot_index: int,
@@ -97,18 +99,14 @@ def solve(
 
         return demand
 
-    model = pywrapcp.RoutingModel(manager)
+    def time_callback(i: int, j: int):
+        """Returns the travel time between the two nodes."""
+        node_i = manager.IndexToNode(i)
+        node_j = manager.IndexToNode(j)
 
-    # distance constraints
-    callback_id = model.RegisterTransitCallback(matrix_callback)
-    model.SetArcCostEvaluatorOfAllVehicles(callback_id)
-    model.AddDimensionWithVehicleCapacity(
-        callback_id,
-        0,  # 0 slack
-        [DISTANCE_CONSTRAINT for i in range(NUM_VEHICLES)],
-        True,  # start to zero
-        "Distance",
-    )
+        return time_matrix[node_i][node_j]
+
+    model = pywrapcp.RoutingModel(manager)
 
     # demand constraint setup
     model.AddDimensionWithVehicleCapacity(
@@ -120,12 +118,51 @@ def solve(
         "Capacity",
     )
 
+    # distance constraints
+    dist_callback_index = model.RegisterTransitCallback(matrix_callback)
+    model.SetArcCostEvaluatorOfAllVehicles(dist_callback_index)
+    model.AddDimensionWithVehicleCapacity(
+        dist_callback_index,
+        0,  # 0 slack
+        [DISTANCE_CONSTRAINT for i in range(NUM_VEHICLES)],
+        True,  # start to zero
+        "Distance",
+    )
+
     dst_dim = model.GetDimensionOrDie("Distance")
     for i in range(manager.GetNumberOfVehicles()):
         end_idx = model.End(i)
         dst_dim.SetCumulVarSoftUpperBound(
             end_idx, SOFT_DISTANCE_CONSTRAINT, SOFT_DISTANCE_PENALTY
         )
+
+    # time windows constraint
+    transit_callback_index = model.RegisterTransitCallback(time_callback)
+    model.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    model.AddDimension(
+        transit_callback_index,
+        30,  # allow waiting time
+        30,  # maximum time per vehicle
+        False,  # Don't force start cumul to zero.
+        "Time",
+    )
+
+    time_dimension = model.GetDimensionOrDie("Time")
+    # Add time window constraints for each location except depot.
+    for location_idx, time_window in enumerate(time_windows):
+        if location_idx == 0:
+            continue
+        index = manager.NodeToIndex(location_idx)
+        time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
+
+    # Add time window constraints for each vehicle start node.
+    for vehicle_id in range(NUM_VEHICLES):
+        index = model.Start(vehicle_id)
+        time_dimension.CumulVar(index).SetRange(time_windows[0][0], time_windows[0][1])
+
+    for i in range(NUM_VEHICLES):
+        model.AddVariableMinimizedByFinalizer(time_dimension.CumulVar(model.Start(i)))
+        model.AddVariableMinimizedByFinalizer(time_dimension.CumulVar(model.End(i)))
 
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
