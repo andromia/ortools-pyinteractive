@@ -115,6 +115,9 @@ for i, c in enumerate(np.unique(CLUSTERS)):
         max_search_seconds=30,
     )
 
+    if not solution:
+        continue
+
     for vehicle in solution:
         vehicles.append(vehicle)
 
