@@ -29,7 +29,7 @@ FILEPATH: str = os.path.join("d:\\", "data", "routing-sample-data", "df2.csv")
 df: pd.DataFrame = pd.read_csv(FILEPATH)
 DEST_LATS: List[float] = df.latitude.tolist()
 DEST_LONS: List[float] = df.longitude.tolist()
-ALL_DEMANDS: List[int] = df.pallets.tolist()
+ALL_DEMANDS: List[int] = [0] + df.pallets.tolist()
 
 # vehicle data
 MAX_VEHICLE_CAP: int = 26
