@@ -14,7 +14,8 @@
 # TODO: either figure out how people deal with this or write a linter
 from typing import List, Tuple  # TODO: typing for numpy arrays?
 from collections import namedtuple
-
+import pandas as pd
+import os
 
 # integer processing
 INT_PRECISION: int = 100
@@ -23,35 +24,12 @@ INT_PRECISION: int = 100
 ORIGIN_LAT: float = 37.69
 ORIGIN_LON: float = -79.31
 
-# destination data
-DEST_LATS: List[float] = [
-    40.17171,
-    33.98832,
-    33.91633,
-    39.82954,
-    39.94745,
-    33.93216,
-    40.82196,
-    40.10201,
-]
-DEST_LONS: List[float] = [
-    -80.25643,
-    -83.87952,
-    -84.82781,
-    -75.43543,
-    -75.14733,
-    -83.35259,
-    -74.42669,
-    -110.23992,
-]
-
-assert len(DEST_LATS) == len(DEST_LONS)
-
-# flow data (includes origin as 0th index)
-ALL_DEMANDS: List[int] = [0, 5, 3, 7, 10, 15, 7, 8, 10]
-
-assert len(ALL_DEMANDS) == len(DEST_LATS) + 1
-assert len(ALL_DEMANDS) == len(DEST_LONS) + 1
+# demand data using df2
+FILEPATH: str = os.path.join("d:\\", "data", "routing-sample-data", "df2.csv")
+df: pd.DataFrame = pd.read_csv(FILEPATH)
+DEST_LATS: List[float] = df.latitude.tolist()
+DEST_LONS: List[float] = df.longitude.tolist()
+ALL_DEMANDS: List[int] = df.pallets.tolist()
 
 # vehicle data
 MAX_VEHICLE_CAP: int = 26
@@ -60,7 +38,7 @@ NUM_VEHICLES: int = len(ALL_DEMANDS)
 SOFT_MAX_VEHICLE_DIST: int = int(MAX_VEHICLE_DIST * 0.75)
 SOFT_MAX_VEHICLE_COST: int = 100000
 
-assert all(x < MAX_VEHICLE_CAP for x in ALL_DEMANDS)
+# assert all(x < MAX_VEHICLE_CAP for x in ALL_DEMANDS)
 
 VEHICLE_CAPACITIES: List[int] = [MAX_VEHICLE_CAP for i in range(NUM_VEHICLES)]
 
