@@ -112,6 +112,7 @@ for i, c in enumerate(np.unique(CLUSTERS)):
         vehicle_caps=VEHICLE_CAP_ARR[is_cluster],
         depot_index=0,
         constraints=CONSTRAINTS,
+        max_search_seconds=30,
     )
 
     for vehicle in solution:
