@@ -114,7 +114,7 @@ def solve(
         model.RegisterUnaryTransitCallback(demand_callback),
         0,  # null capacity slack
         VEHICLE_CAPS,  # vehicle maximum capacity
-        True,  # start cumul to zero
+        True,  # cumul to zero
         "Capacity",
     )
 
@@ -125,7 +125,7 @@ def solve(
         dist_callback_index,
         0,  # 0 slack
         [DISTANCE_CONSTRAINT for i in range(NUM_VEHICLES)],
-        True,  # start to zero
+        True,  # cumul to zero
         "Distance",
     )
 
