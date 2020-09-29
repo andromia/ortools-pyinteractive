@@ -6,8 +6,8 @@
 [X] Distance
 [X] Windows
 [X] Travel Time NOTE: excluding layover/etc.
-[ ] Cost
-[ ] Business Penalties
+[ ] Costs
+[ ] Business Penalties & Incentives
 [ ] Dev Tooling
 """
 # NOTE: for ipykernels function scoped vars prefixed with underscores
@@ -33,7 +33,7 @@ ALL_DEMANDS: List[int] = [0] + df.pallets.tolist()
 
 # vehicle data
 MAX_VEHICLE_CAP: int = 26
-MAX_VEHICLE_DIST: int = 100000  # distance is x*100 for integers
+MAX_VEHICLE_DIST: int = 300000  # distance is x*100 for integers
 NUM_VEHICLES: int = len(ALL_DEMANDS)
 SOFT_MAX_VEHICLE_DIST: int = int(MAX_VEHICLE_DIST * 0.75)
 SOFT_MAX_VEHICLE_COST: int = 100000
