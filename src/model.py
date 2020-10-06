@@ -225,29 +225,13 @@ def visualize_solution(vehicles: "Vehicles") -> None:
         for j, v in enumerate(r):
             lats.append(v.lat)
             lons.append(v.lon)
-            text.append(f"demand: {r[j].demand}")
+            text.append(f"demand: {v.demand}")
 
             if j < len(r) - 1:
                 lat_paths.append([v.lat, r[j + 1].lat])
                 lon_paths.append([v.lon, r[j + 1].lon])
 
     fig = go.Figure()
-
-    fig.add_trace(
-        go.Scattergeo(
-            locationmode="USA-states",
-            lat=lats,
-            lon=lons,
-            hoverinfo="text",
-            text=text,
-            mode="markers",
-            marker=dict(
-                size=5,
-                color="rgb(255, 0, 0)",
-                line=dict(width=3, color="rgba(68, 68, 68, 0)"),
-            ),
-        )
-    )
 
     for i in range(len(lat_paths)):
         fig.add_trace(
@@ -260,6 +244,22 @@ def visualize_solution(vehicles: "Vehicles") -> None:
                 # opacity = float(df_flight_paths['cnt'][i]) / float(df_flight_paths['cnt'].max()),
             )
         )
+
+    fig.add_trace(
+        go.Scattergeo(
+            locationmode="USA-states",
+            lat=lats,
+            lon=lons,
+            hovertext=text,
+            hoverinfo="text",
+            mode="markers",
+            marker=dict(
+                size=5,
+                color="rgb(255, 0, 0)",
+                line=dict(width=3, color="rgba(68, 68, 68, 0)"),
+            ),
+        )
+    )
 
     fig.update_layout(
         title_text="",
