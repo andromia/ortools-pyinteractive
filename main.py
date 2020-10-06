@@ -21,11 +21,11 @@ import os
 INT_PRECISION: int = 100
 
 # origin data
-ORIGIN_LAT: float = 37.69
-ORIGIN_LON: float = -79.31
+ORIGIN_LAT: float = 40.0
+ORIGIN_LON: float = -120.0
 
 # demand data using df2
-FILEPATH: str = os.path.join("d:\\", "data", "routing-sample-data", "df2.csv")
+FILEPATH: str = os.path.join("d:\\", "data", "routing-sample-data", "df3.csv")
 df: pd.DataFrame = pd.read_csv(FILEPATH)
 DEST_LATS: List[float] = df.latitude.tolist()
 DEST_LONS: List[float] = df.longitude.tolist()
@@ -33,10 +33,10 @@ ALL_DEMANDS: List[int] = [0] + df.pallets.tolist()
 
 # vehicle data
 MAX_VEHICLE_CAP: int = 26
-MAX_VEHICLE_DIST: int = 300000  # distance is x*100 for integers
+MAX_VEHICLE_DIST: int = 500000  # distance is x*100 for integers
 NUM_VEHICLES: int = len(ALL_DEMANDS)
-SOFT_MAX_VEHICLE_DIST: int = int(MAX_VEHICLE_DIST * 0.75)
-SOFT_MAX_VEHICLE_COST: int = 100000
+SOFT_MAX_VEHICLE_DIST: int = 300000  # int(MAX_VEHICLE_DIST * 0.75)
+SOFT_MAX_VEHICLE_COST: int = 1000000
 
 # assert all(x < MAX_VEHICLE_CAP for x in ALL_DEMANDS)
 
@@ -112,7 +112,7 @@ for i, c in enumerate(np.unique(CLUSTERS)):
         vehicle_caps=VEHICLE_CAP_ARR[is_cluster],
         depot_index=0,
         constraints=CONSTRAINTS,
-        max_search_seconds=30,
+        max_search_seconds=10,
     )
 
     if not solution:
