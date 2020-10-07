@@ -20,6 +20,9 @@ import os
 # integer processing
 INT_PRECISION: int = 100
 
+# ortools config
+MAX_SEARCH_SECONDS: int = 10
+
 # origin data
 ORIGIN_LAT: float = 40.0
 ORIGIN_LON: float = -120.0
@@ -33,15 +36,14 @@ ALL_DEMANDS: List[int] = [0] + df.pallets.tolist()
 
 # vehicle data
 MAX_VEHICLE_CAP: int = 26
-MAX_VEHICLE_DIST: int = 500000  # distance is x*100 for integers
+MAX_VEHICLE_DIST: int = 300000  # distance is x*100 for integers
 NUM_VEHICLES: int = len(ALL_DEMANDS)
-SOFT_MAX_VEHICLE_DIST: int = 300000  # int(MAX_VEHICLE_DIST * 0.75)
-SOFT_MAX_VEHICLE_COST: int = 1000000
+SOFT_MAX_VEHICLE_DIST: int = int(MAX_VEHICLE_DIST * 0.75)
+SOFT_MAX_VEHICLE_COST: int = SOFT_MAX_VEHICLE_DIST + 1  # cost feels ambiguous
 
 # assert all(x < MAX_VEHICLE_CAP for x in ALL_DEMANDS)
 
 VEHICLE_CAPACITIES: List[int] = [MAX_VEHICLE_CAP for i in range(NUM_VEHICLES)]
-
 
 # %%
 #::CLUSTER PROCESSING
@@ -112,7 +114,7 @@ for i, c in enumerate(np.unique(CLUSTERS)):
         vehicle_caps=VEHICLE_CAP_ARR[is_cluster],
         depot_index=0,
         constraints=CONSTRAINTS,
-        max_search_seconds=10,
+        max_search_seconds=MAX_SEARCH_SECONDS,
     )
 
     if not solution:

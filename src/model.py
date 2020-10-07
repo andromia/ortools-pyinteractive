@@ -68,6 +68,8 @@ def solve(
     DISTANCE_MATRIX = distance_matrix
     NUM_NODES = len(nodes)
 
+    # TODO: if distance matrix is not processed with an origin this should throw
+    # an error.
     if len(distance_matrix) - 1 == len(demand):
         DEMAND = [0] + list(demand)
     else:
@@ -129,12 +131,12 @@ def solve(
         "Distance",
     )
 
-    dst_dim = model.GetDimensionOrDie("Distance")
+    """dst_dim = model.GetDimensionOrDie("Distance")
     for i in range(manager.GetNumberOfVehicles()):
         end_idx = model.End(i)
         dst_dim.SetCumulVarSoftUpperBound(
             end_idx, SOFT_DISTANCE_CONSTRAINT, SOFT_DISTANCE_PENALTY
-        )
+        )"""
 
     # time windows constraint
     transit_callback_index = model.RegisterTransitCallback(time_callback)
@@ -201,10 +203,11 @@ def solve(
 
                     route.append(Stop(original_idx, lat, lon, demand, dist))
 
+                    prev_node_index = node_index
+
                     if model.IsEnd(idx):
                         break
 
-                    prev_node = node_index
                     idx = assignment.Value(model.NextVar(idx))
 
             solution.append(route)
