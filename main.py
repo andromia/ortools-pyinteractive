@@ -28,9 +28,7 @@ ORIGIN_LAT: float = 40.0
 ORIGIN_LON: float = -120.0
 
 # demand data using df2
-FILEPATH: str = os.path.join(
-    "d:\\", "data", "routing-sample-data", "df3.csv"
-)
+FILEPATH: str = os.path.join("d:\\", "data", "routing-sample-data", "df3.csv")
 df: pd.DataFrame = pd.read_csv(FILEPATH)
 DEST_LATS: List[float] = df.latitude.tolist()
 DEST_LONS: List[float] = df.longitude.tolist()
