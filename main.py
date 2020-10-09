@@ -25,11 +25,11 @@ MAX_SEARCH_SECONDS: int = 10
 
 # origin data
 ORIGIN_LAT: float = 40.0
-ORIGIN_LON: float = -88
+ORIGIN_LON: float = -120.0
 
 # demand data using df2
 FILEPATH: str = os.path.join(
-    "d:\\", "data", "routing-sample-data", "vrp_testing_data.csv"
+    "d:\\", "data", "routing-sample-data", "df3.csv"
 )
 df: pd.DataFrame = pd.read_csv(FILEPATH)
 DEST_LATS: List[float] = df.latitude.tolist()
@@ -57,6 +57,7 @@ CLUSTERS = cluster.create_dbscan_clusters(lats=DEST_LATS, lons=DEST_LONS)
 #::ORTOOLS MODEL
 from src import distance
 from src import model
+from src import visualization as viz
 
 import numpy as np
 
@@ -125,4 +126,4 @@ for i, c in enumerate(np.unique(CLUSTERS)):
     for vehicle in solution:
         vehicles.append(vehicle)
 
-model.visualize_solution(vehicles)
+viz.visualize_solution(vehicles)
