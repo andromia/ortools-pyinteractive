@@ -36,10 +36,10 @@ ALL_DEMANDS: List[int] = [0] + df.pallets.tolist()
 
 # vehicle data
 MAX_VEHICLE_CAP: int = 26
-MAX_VEHICLE_DIST: int = 300000  # distance is x*100 for integers
+MAX_VEHICLE_DIST: int = 3500 * INT_PRECISION
 NUM_VEHICLES: int = len(ALL_DEMANDS)
 SOFT_MAX_VEHICLE_DIST: int = int(MAX_VEHICLE_DIST * 0.75)
-SOFT_MAX_VEHICLE_COST: int = SOFT_MAX_VEHICLE_DIST + 1  # cost feels ambiguous
+SOFT_MAX_VEHICLE_COST: int = MAX_VEHICLE_DIST + 1  # cost feels ambiguous
 
 # assert all(x < MAX_VEHICLE_CAP for x in ALL_DEMANDS)
 
