@@ -130,12 +130,12 @@ def solve(
         "Distance",
     )
 
-    """dst_dim = model.GetDimensionOrDie("Distance")
+    dst_dim = model.GetDimensionOrDie("Distance")
     for i in range(manager.GetNumberOfVehicles()):
         end_idx = model.End(i)
         dst_dim.SetCumulVarSoftUpperBound(
             end_idx, SOFT_DISTANCE_CONSTRAINT, SOFT_DISTANCE_PENALTY
-        )"""
+        )
 
     # time windows constraint
     transit_callback_index = model.RegisterTransitCallback(time_callback)
